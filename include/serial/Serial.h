@@ -39,6 +39,17 @@ namespace serial
 {
 
 /**************************************************************************************
+ * TYPEDEFS
+ **************************************************************************************/
+
+enum class FlowControl
+{
+  None,
+  Software,
+  Hardware
+};
+
+/**************************************************************************************
  * CLASS DECLARATION
  **************************************************************************************/
 
@@ -47,14 +58,7 @@ class Serial
 
 public:
 
-  typedef enum
-  {
-    None,
-    Software,
-    Hardware
-  } eFlowControlSelect;
-
-   Serial(std::string const & dev_node, size_t const baud_rate, eFlowControlSelect const flow_control);
+   Serial(std::string const & dev_node, size_t const baud_rate, FlowControl const flow_control);
   ~Serial();
 
 
@@ -71,7 +75,7 @@ private:
 
   std::string                   _dev_node;
   size_t                        _baud_rate;
-  eFlowControlSelect            _flow_control;
+  FlowControl                   _flow_control;
 
   boost::asio::io_service       _io_service;
   boost::asio::serial_port      _serial_port;
