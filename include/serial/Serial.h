@@ -47,7 +47,14 @@ class Serial
 
 public:
 
-   Serial(std::string const & dev_node, size_t const baud_rate);
+  typedef enum
+  {
+    None,
+    Software,
+    Hardware
+  } eFlowControlSelect;
+
+   Serial(std::string const & dev_node, size_t const baud_rate, eFlowControlSelect const flow_control);
   ~Serial();
 
 
@@ -64,6 +71,7 @@ private:
 
   std::string                   _dev_node;
   size_t                        _baud_rate;
+  eFlowControlSelect            _flow_control;
 
   boost::asio::io_service       _io_service;
   boost::asio::serial_port      _serial_port;

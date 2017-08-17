@@ -37,10 +37,11 @@ namespace serial
  * CTOR/DTOR
  **************************************************************************************/
 
-Serial::Serial(std::string const & dev_node, size_t const baud_rate)
-: _serial_port(_io_service),
-  _dev_node   (dev_node),
-  _baud_rate  (baud_rate)
+Serial::Serial(std::string const & dev_node, size_t const baud_rate, eFlowControlSelect const flow_control)
+: _serial_port  (_io_service ),
+  _dev_node     (dev_node    ),
+  _baud_rate    (baud_rate   ),
+  _flow_control (flow_control)
 {
   _io_service.post(boost::bind(&Serial::read, this));
 }
@@ -67,6 +68,15 @@ void Serial::open()
 
     _serial_port.set_option(boost::asio::serial_port_base::baud_rate      (_baud_rate));
     _serial_port.set_option(boost::asio::serial_port_base::character_size (8));
+
+    switch(_flow_control)
+    {
+    case Software : _serial_port.set_option(boost::asio::serial_port_base::flow_control   (boost::asio::serial_port_base::flow_control::software)); break;
+    case Hardware : _serial_port.set_option(boost::asio::serial_port_base::flow_control   (boost::asio::serial_port_base::flow_control::hardware)); break;
+    case None     :
+    default       : _serial_port.set_option(boost::asio::serial_port_base::flow_control   (boost::asio::serial_port_base::flow_control::none    )); break;
+    }
+
     _serial_port.set_option(boost::asio::serial_port_base::flow_control   (boost::asio::serial_port_base::flow_control::none));
     _serial_port.set_option(boost::asio::serial_port_base::parity         (boost::asio::serial_port_base::parity::none));
     _serial_port.set_option(boost::asio::serial_port_base::stop_bits      (boost::asio::serial_port_base::stop_bits::one));
