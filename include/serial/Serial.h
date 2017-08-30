@@ -25,11 +25,14 @@
 
 #include <stdint.h>
 
+#include <mutex>
+#include <future>
 #include <string>
+#include <vector>
+#include <thread>
+#include <condition_variable>
 
 #include <boost/asio.hpp>
-#include <boost/thread.hpp>
-#include <boost/function.hpp>
 
 /**************************************************************************************
  * NAMESPACE
@@ -37,17 +40,6 @@
 
 namespace serial
 {
-
-/**************************************************************************************
- * TYPEDEFS
- **************************************************************************************/
-
-enum class FlowControl
-{
-  None,
-  Software,
-  Hardware
-};
 
 /**************************************************************************************
  * CLASS DECLARATION
@@ -58,35 +50,33 @@ class Serial
 
 public:
 
-   Serial(std::string const & dev_node, size_t const baud_rate, FlowControl const flow_control);
+   Serial();
   ~Serial();
 
-
-  typedef boost::function<void(const char*, size_t)> onSerialDataReceivedCallback;
-
-  void    registerOnSerialDataReceivedCallback(onSerialDataReceivedCallback serial_data_received_callback_func);
-  void    open                                ();
-  size_t  send                                (uint8_t const * buffer, size_t const bytes);
-  void    close                               ();
+  void                              open    (std::string          const & dev_node, size_t const baud_rate);
+  void                              transmit(std::vector<uint8_t> const & data                            );
+  std::future<std::vector<uint8_t>> receive (size_t               const   num_bytes                       );
+  void                              close   (                                                             );
 
 private:
 
   static size_t const RECEIVE_BUFFER_SIZE = 32;
 
-  std::string                   _dev_node;
-  size_t                        _baud_rate;
-  FlowControl                   _flow_control;
+  uint8_t                       _asio_rx_buffer[RECEIVE_BUFFER_SIZE];
 
   boost::asio::io_service       _io_service;
   boost::asio::serial_port      _serial_port;
 
-  boost::thread                 _io_service_thread;
+  std::thread                   _io_service_thread;
 
-  char                        	_receive_buffer[RECEIVE_BUFFER_SIZE];
-  onSerialDataReceivedCallback 	_serial_data_received_callback_func;
+  std::mutex                    _mutex;
+  std::condition_variable       _condition;
+  std::vector<uint8_t>          _rx_buffer;
 
-  void read   ();
-  void readEnd(boost::system::error_code const & error, size_t bytes_transferred);
+  void                 read   (                                                                         );
+  void                 readEnd(boost::system::error_code const & error,         size_t bytes_transferred);
+  void                 push   (std::vector<uint8_t>      const & received_data                          );
+  std::vector<uint8_t> pop    (size_t                    const   num_bytes                              );
 
 };
 

@@ -22,8 +22,6 @@
 
 #include <serial/Serial.h>
 
-#include <iostream>
-
 #include <boost/bind.hpp>
 
 /**************************************************************************************
@@ -37,63 +35,43 @@ namespace serial
  * CTOR/DTOR
  **************************************************************************************/
 
-Serial::Serial(std::string const & dev_node, size_t const baud_rate, FlowControl const flow_control)
-: _serial_port  (_io_service ),
-  _dev_node     (dev_node    ),
-  _baud_rate    (baud_rate   ),
-  _flow_control (flow_control)
+Serial::Serial()
+: _serial_port(_io_service)
 {
   _io_service.post(boost::bind(&Serial::read, this));
 }
 
 Serial::~Serial()
 {
-
+  _io_service_thread.join();
 }
 
 /**************************************************************************************
  * PUBLIC MEMBER FUNCTIONS
  **************************************************************************************/
 
-void Serial::registerOnSerialDataReceivedCallback(onSerialDataReceivedCallback serial_data_received_callback_func)
+void Serial::open(std::string const & dev_node, size_t const baud_rate)
 {
-  _serial_data_received_callback_func = serial_data_received_callback_func;
+  _serial_port.open(dev_node);
+
+  _serial_port.set_option(boost::asio::serial_port_base::baud_rate      (baud_rate                                        ));
+  _serial_port.set_option(boost::asio::serial_port_base::character_size (8                                                ));
+  _serial_port.set_option(boost::asio::serial_port_base::flow_control   (boost::asio::serial_port_base::flow_control::none));
+  _serial_port.set_option(boost::asio::serial_port_base::parity         (boost::asio::serial_port_base::parity::none      ));
+  _serial_port.set_option(boost::asio::serial_port_base::stop_bits      (boost::asio::serial_port_base::stop_bits::one    ));
+
+  std::thread t(boost::bind(&boost::asio::io_service::run, &_io_service));
+  _io_service_thread.swap(t);
 }
 
-void Serial::open()
+void Serial::transmit(std::vector<uint8_t> const & data)
 {
-  try
-  {
-    _serial_port.open(_dev_node);
-
-    _serial_port.set_option(boost::asio::serial_port_base::baud_rate      (_baud_rate));
-    _serial_port.set_option(boost::asio::serial_port_base::character_size (8));
-
-    switch(_flow_control)
-    {
-    case FlowControl::Software : _serial_port.set_option(boost::asio::serial_port_base::flow_control   (boost::asio::serial_port_base::flow_control::software)); break;
-    case FlowControl::Hardware : _serial_port.set_option(boost::asio::serial_port_base::flow_control   (boost::asio::serial_port_base::flow_control::hardware)); break;
-    case FlowControl::None     :
-    default                    : _serial_port.set_option(boost::asio::serial_port_base::flow_control   (boost::asio::serial_port_base::flow_control::none    )); break;
-    }
-
-    _serial_port.set_option(boost::asio::serial_port_base::flow_control   (boost::asio::serial_port_base::flow_control::none));
-    _serial_port.set_option(boost::asio::serial_port_base::parity         (boost::asio::serial_port_base::parity::none));
-    _serial_port.set_option(boost::asio::serial_port_base::stop_bits      (boost::asio::serial_port_base::stop_bits::one));
-
-
-    boost::thread t(boost::bind(&boost::asio::io_service::run, &_io_service));
-    _io_service_thread.swap(t);
-  }
-  catch(boost::exception const &e)
-  {
-    std::cerr << "Error TSerial::open" << std::endl << boost::diagnostic_information(e) << std::endl;
-  }
+  boost::asio::write(_serial_port, boost::asio::buffer(data));
 }
 
-size_t Serial::send(uint8_t const * buffer, size_t const bytes)
+std::future<std::vector<uint8_t>> Serial::receive(size_t const num_bytes)
 {
-  return boost::asio::write(_serial_port, boost::asio::buffer(buffer, bytes));
+  return std::async(boost::bind(&Serial::pop, this, num_bytes));
 }
 
 void Serial::close()
@@ -107,23 +85,50 @@ void Serial::close()
 
 void Serial::read()
 {
-  _serial_port.async_read_some(boost::asio::buffer(_receive_buffer, RECEIVE_BUFFER_SIZE), boost::bind(&Serial::readEnd, this, _1, _2));
-
+  _serial_port.async_read_some(boost::asio::buffer(_asio_rx_buffer, RECEIVE_BUFFER_SIZE),
+                               boost::bind(&Serial::readEnd, this, _1, _2));
 }
 
 void Serial::readEnd(boost::system::error_code const & error, size_t bytes_transferred)
 {
   if (!error)
   {
-    if(_serial_data_received_callback_func)
-    {
-      _serial_data_received_callback_func(_receive_buffer, bytes_transferred);
-    }
+    std::vector<uint8_t> const received_data(_asio_rx_buffer, _asio_rx_buffer+ bytes_transferred);
+
+    push(received_data);
 
     read();
   }
 }
 
+void Serial::push(std::vector<uint8_t> const & received_data)
+{
+  std::unique_lock<std::mutex> lock(_mutex);
+
+  _rx_buffer.insert(std::end  (_rx_buffer   ),
+                    std::begin(received_data),
+                    std::end  (received_data));
+
+  _condition.notify_all();
+}
+
+std::vector<uint8_t> Serial::pop(size_t const num_bytes)
+{
+  std::unique_lock<std::mutex> lock(_mutex);
+
+  while (_rx_buffer.size() < num_bytes) _condition.wait(lock);
+
+  std::vector<uint8_t> data;
+
+  data.insert(std::begin(data      ),
+              std::begin(_rx_buffer),
+              std::begin(_rx_buffer) + num_bytes);
+
+  _rx_buffer.erase(std::begin(_rx_buffer),
+                   std::begin(_rx_buffer) + num_bytes);
+
+  return data;
+}
 
 /**************************************************************************************
  * NAMESPACE
