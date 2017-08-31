@@ -8,7 +8,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 ##########################################################################
 
-set(SERIAL_DEMO_TARGET serial-demo-receive)
+set(SERIAL_DEMO_TARGET serial-receive)
 
 ##########################################################################
 
