@@ -71,7 +71,7 @@ void Serial::transmit(std::vector<uint8_t> const & data)
 
 std::future<std::vector<uint8_t>> Serial::receive(size_t const num_bytes)
 {
-  return std::async(boost::bind(&Serial::pop, this, num_bytes));
+  return std::async(std::launch::deferred, boost::bind(&ReceiveBuffer::pop, &(this->_receive_buffer), num_bytes));
 }
 
 void Serial::close()
@@ -85,7 +85,7 @@ void Serial::close()
 
 void Serial::read()
 {
-  _serial_port.async_read_some(boost::asio::buffer(_asio_rx_buffer, RECEIVE_BUFFER_SIZE),
+  _serial_port.async_read_some(boost::asio::buffer(_asio_receive_buffer, RECEIVE_BUFFER_SIZE),
                                boost::bind(&Serial::readEnd, this, _1, _2));
 }
 
@@ -93,41 +93,12 @@ void Serial::readEnd(boost::system::error_code const & error, size_t bytes_trans
 {
   if (!error)
   {
-    std::vector<uint8_t> const received_data(_asio_rx_buffer, _asio_rx_buffer+ bytes_transferred);
+    std::vector<uint8_t> const received_data(_asio_receive_buffer, _asio_receive_buffer+ bytes_transferred);
 
-    push(received_data);
+    _receive_buffer.push(received_data);
 
     read();
   }
-}
-
-void Serial::push(std::vector<uint8_t> const & received_data)
-{
-  std::unique_lock<std::mutex> lock(_mutex);
-
-  _rx_buffer.insert(std::end  (_rx_buffer   ),
-                    std::begin(received_data),
-                    std::end  (received_data));
-
-  _condition.notify_all();
-}
-
-std::vector<uint8_t> Serial::pop(size_t const num_bytes)
-{
-  std::unique_lock<std::mutex> lock(_mutex);
-
-  while (_rx_buffer.size() < num_bytes) _condition.wait(lock);
-
-  std::vector<uint8_t> data;
-
-  data.insert(std::begin(data      ),
-              std::begin(_rx_buffer),
-              std::begin(_rx_buffer) + num_bytes);
-
-  _rx_buffer.erase(std::begin(_rx_buffer),
-                   std::begin(_rx_buffer) + num_bytes);
-
-  return data;
 }
 
 /**************************************************************************************

@@ -25,14 +25,14 @@
 
 #include <stdint.h>
 
-#include <mutex>
 #include <future>
 #include <string>
 #include <vector>
 #include <thread>
-#include <condition_variable>
 
 #include <boost/asio.hpp>
+
+#include <serial/ReceiveBuffer.h>
 
 /**************************************************************************************
  * NAMESPACE
@@ -60,23 +60,19 @@ public:
 
 private:
 
+  ReceiveBuffer                 _receive_buffer;
+
   static size_t const RECEIVE_BUFFER_SIZE = 32;
 
-  uint8_t                       _asio_rx_buffer[RECEIVE_BUFFER_SIZE];
+  uint8_t                       _asio_receive_buffer[RECEIVE_BUFFER_SIZE];
 
   boost::asio::io_service       _io_service;
   boost::asio::serial_port      _serial_port;
 
   std::thread                   _io_service_thread;
 
-  std::mutex                    _mutex;
-  std::condition_variable       _condition;
-  std::vector<uint8_t>          _rx_buffer;
-
-  void                 read   (                                                                         );
-  void                 readEnd(boost::system::error_code const & error,         size_t bytes_transferred);
-  void                 push   (std::vector<uint8_t>      const & received_data                          );
-  std::vector<uint8_t> pop    (size_t                    const   num_bytes                              );
+  void read   (                                                                 );
+  void readEnd(boost::system::error_code const & error, size_t bytes_transferred);
 
 };
 
