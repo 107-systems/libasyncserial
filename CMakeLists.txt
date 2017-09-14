@@ -35,7 +35,9 @@ add_library(
 
 target_link_libraries(
   ${LIBSERIAL_NAME}
-  boost_system boost_thread
+  boost_system
+  boost_thread
+  pthread
 )
 
 ##########################################################################

@@ -26,7 +26,6 @@ add_executable(
 target_link_libraries(
   ${SERIAL_DEMO_TARGET}
   serial
-  pthread
 )
 
 ##########################################################################
