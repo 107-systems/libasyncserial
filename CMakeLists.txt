@@ -1,47 +1,14 @@
 ##########################################################################
-
-cmake_minimum_required (VERSION 2.8)
-
+cmake_minimum_required(VERSION 3.15)
 ##########################################################################
-
-project (serial)
-
+project("libasyncserial")
 ##########################################################################
-
-include_directories(include)
-
+add_library(${PROJECT_NAME} INTERFACE)
 ##########################################################################
-
-set(LIBSERIAL_NAME ${PROJECT_NAME})
-
+target_include_directories(${PROJECT_NAME} INTERFACE include)
+target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
+target_link_libraries(${PROJECT_NAME} INTERFACE boost_system boost_thread pthread)
 ##########################################################################
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-
-##########################################################################
-
-set(LIBSERIAL_SRCS
-  src/ReceiveBuffer.cpp
-  src/Serial.cpp
-)
-
-##########################################################################
-
-add_library(
-  ${LIBSERIAL_NAME} 
-  STATIC
-  ${LIBSERIAL_SRCS}
-)
-
-target_link_libraries(
-  ${LIBSERIAL_NAME}
-  boost_system
-  boost_thread
-  pthread
-)
-
-##########################################################################
-
-add_subdirectory(examples)
-
+add_subdirectory(examples/serial-receive)
+add_subdirectory(examples/serial-transmit)
 ##########################################################################
