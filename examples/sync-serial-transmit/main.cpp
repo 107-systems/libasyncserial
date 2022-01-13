@@ -10,15 +10,11 @@
  **************************************************************************************/
 
 #include <stdlib.h>
+#include <stdint.h>
 
 #include <vector>
-#include <string>
-#include <future>
-#include <iomanip>
-#include <iostream>
-#include <algorithm>
 
-#include <asyncserial/AsyncSerial.hpp>
+#include <asyncserial/AsyncSerial.h>
 
 /**************************************************************************************
  * MAIN
@@ -30,12 +26,8 @@ int main(int argc, char **argv)
 
   serial.open("/dev/ttyUSB0", 115200);
 
-  std::future<std::vector<uint8_t>> future = serial.receive(10);
-  std::vector<uint8_t> const received_data = future.get();
-  std::for_each(std::begin(received_data),
-                std::end  (received_data),
-                [](uint8_t const ch) { std::cout << std::setw(2) << std::setfill('0') << static_cast<size_t>(ch) << " "; });
-  std::cout << std::endl;
+  std::vector<uint8_t> const data = {0xDE, 0xAD, 0xBE, 0xEF};
+  serial.transmit(data);
 
   serial.close();
 
