@@ -23,6 +23,22 @@
 #include <boost/asio.hpp>
 
 /**************************************************************************************
+ * DEFINE
+ **************************************************************************************/
+
+#define LIBASYNCSERIAL_BASE_MAJOR 0001
+#define LIBASYNCSERIAL_BASE_MINOR 0000
+#define LIBASYNCSERIAL_BASE_PATCH 0000
+
+#define LIBASYNCSERIAL_BASE_CONCAT_VERSION_(a,b,c) a ## b ## c
+#define LIBASYNCSERIAL_BASE_CONCAT_VERSION(a,b,c) LIBASYNCSERIAL_BASE_CONCAT_VERSION_(a,b,c)
+
+#define LIBASYNCSERIAL_BASE_VERSION \
+        LIBASYNCSERIAL_BASE_CONCAT_VERSION(LIBASYNCSERIAL_BASE_MAJOR, \
+                                                LIBASYNCSERIAL_BASE_MINOR, \
+                                                LIBASYNCSERIAL_BASE_PATCH)
+
+/**************************************************************************************
  * CLASS DECLARATION
  **************************************************************************************/
 
@@ -30,8 +46,14 @@ class AsyncSerial
 {
 public:
 
+  static size_t constexpr MAJOR = LIBASYNCSERIAL_BASE_MAJOR;
+  static size_t constexpr MINOR = LIBASYNCSERIAL_BASE_MINOR;
+  static size_t constexpr PATCH = LIBASYNCSERIAL_BASE_PATCH;
+
+
    AsyncSerial();
   ~AsyncSerial();
+
 
   void open(std::string const & dev_node, size_t const baud_rate);
   void close();
