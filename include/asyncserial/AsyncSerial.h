@@ -35,8 +35,8 @@
 
 #define LIBASYNCSERIAL_BASE_VERSION \
         LIBASYNCSERIAL_BASE_CONCAT_VERSION(LIBASYNCSERIAL_BASE_MAJOR, \
-                                                LIBASYNCSERIAL_BASE_MINOR, \
-                                                LIBASYNCSERIAL_BASE_PATCH)
+                                           LIBASYNCSERIAL_BASE_MINOR, \
+                                           LIBASYNCSERIAL_BASE_PATCH)
 
 /**************************************************************************************
  * CLASS DECLARATION
