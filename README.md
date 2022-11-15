@@ -2,6 +2,7 @@
 :floppy_disk: `libasyncserial`
 ==============================
 [![Smoke test status](https://github.com/107-systems/libasyncserial/actions/workflows/smoke-test.yml/badge.svg)](https://github.com/107-systems/libasyncserial/actions/workflows/smoke-test.yml)
+[![Spell Check status](https://github.com/107-systems/libasyncserial/actions/workflows/spell-check.yml/badge.svg)](https://github.com/107-systems/libasyncserial/actions/workflows/spell-check.yml)
 
 A C++ serial interface library based on `boost::asio`.
 
