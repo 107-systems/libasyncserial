@@ -22,9 +22,6 @@
 
 int main(int argc, char **argv)
 {
-  (void)argc;
-  (void)argv;
-
   AsyncSerial serial;
 
   serial.open("/dev/ttyUSB0", 115200);
